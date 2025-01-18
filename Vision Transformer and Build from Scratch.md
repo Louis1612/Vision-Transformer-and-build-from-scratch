@@ -12,7 +12,7 @@ organized by Luyi Lin at Beijing Jiaotong University, 23271037@bjtu.edu.cn
 - 数学性
 - 实践性
 - 丰富：从不同角度进行理解，力求得到对Transformer深刻观察
-- 前沿：Transformer^2^的引入 
+- 前沿：关注前沿工作，Transformer^2^的引入 
 
 ## Seq2Seq
 
@@ -195,15 +195,19 @@ Seq2Seq是NLP的经典模型了，说它经典是指：
 
 Seq2Seq模型是Encoder-decoder架构的一种具体应用
 
-当我们说 Encoder-decoder
-
 
 
 ## Attention: is it ALL we need?[^4]
 
-自经济学研究稀缺资源分配以来，人们正处在“注意力经济”时代， 即人类的注意力被视为可以交换的、有限的、有价值的且稀缺的商品。许多商业模式也被开发出来去利用这一点：在音乐或视频流媒体服务上，人们要么消耗注意力在广告上，要么付钱来隐藏广告； 为了在网络游戏世界的成长，人们要么消耗注意力在游戏战斗中， 从而帮助吸引新的玩家，要么付钱立即变得强大。 总之，注意力不是免费的。[^4]
+### Introduction
 
-注意力是稀缺的，而环境中干扰注意力的信息却不少。 人类的视觉神经系统大约每秒收到10^8^位的信息， 这远远超过了大脑能够处理的信息水平。 幸运的是，人类的祖先已经从经验中认识到 “并非感官的所有输入都是一样重要的”。 在整个人类历史中，这种只将注意力引向感兴趣的一小部分信息的能力， 使人类的大脑能够更明智地分配注意力资源来生存、发展。[^4]
+RNNSearch
+
+![alt text](C:\Users\14711\Desktop\Vision Transformer and Build from Scratch\image\image-5.png)
+
+自经济学研究稀缺资源分配以来，人们正处在“注意力经济”时代， 即人类的注意力被视为可以交换的、有限的、有价值的且稀缺的商品。许多商业模式也被开发出来去利用这一点：在音乐或视频流媒体服务上，人们要么消耗注意力在广告上，要么付钱来隐藏广告； 为了在网络游戏世界的成长，人们要么消耗注意力在游戏战斗中， 从而帮助吸引新的玩家，要么付钱立即变得强大。 总之，注意力不是免费的。
+
+注意力是稀缺的，而环境中干扰注意力的信息却不少。 人类的视觉神经系统大约每秒收到10^8^位的信息， 这远远超过了大脑能够处理的信息水平。 幸运的是，人类的祖先已经从经验中认识到 “并非感官的所有输入都是一样重要的”。 在整个人类历史中，这种只将注意力引向感兴趣的一小部分信息的能力， 使人类的大脑能够更明智地分配注意力资源来生存、发展。
 
 人的视觉注意力机制有两种实现方式：
 
@@ -215,33 +219,90 @@ Seq2Seq模型是Encoder-decoder架构的一种具体应用
 
 ![image-20250118165026039](C:\Users\14711\AppData\Roaming\Typora\typora-user-images\image-20250118165026039.png)
 
-对于非自主性提示实现的注意力机制，我们可以简单地用一个参数化的全连接层来模拟。
+对于非自主性提示实现的注意力机制，我们可以简单地用一个参数化的全连接层，甚至是非参数化的最大汇聚层或平均汇聚层。
 
 自然地，我们会关注如何建模自主性提示实现的注意力机制，这就要从具体的视觉注意行为中抽取出视觉注意过程，抽象为注意模型。为此，我们考察上述视觉注意力行为发生的过程：
 
-人 去 注意 事物
+人去注意事物，根据某种"重要性"分配自己的注意力。如何判断这种"重要性"？
 
-人经过学习 知道哪一块是更重要的
+首先，这种重要是相对而言的，比较出来的，它必须对注意范围内的所有对象都进行作用，比较作用的大小；其次，重要性是有个目的的——人为什么会觉得这个东西重要，其背后必然存在着人的主观目的。人依照着自己的目的，注意到了这个对象。
 
-如何判断这种"重要性"？
+我们总结出注意过程如下：
 
-首先，这种重要是相对而言的，比较出来的，它必须对注意范围内的所有对象都进行作用，比较作用的大小；其次，重要性是有个目的的——人为什么会觉得这个东西重要，其背后必然存在着人的主观目的。
+人背靠一个"目的"($Objective$)，与注意范围内的所有对象($Object$)一一"反应"，最后得出注意力的分配。
 
-人依照着自己的目的，注意到了这个对象。
+我们似乎能写出这样的表达式：
+$$
+注意力的分配 = \sigma(Objective, Object)\\
+注意行为的结果 = 注意力的分配 · Object
+$$
+其中，$\sigma$是一个函数，它在保证了映射结果是一个分量非负且和为1的向量时，是较为合理的。
 
-人拿着自己的"目的"，与注意范围内所有对象一一"反应"，最后得出注意对象。
+### A Quick Flight[^4]
+
+ 查询（自主提示）和键（非自主提示）之间的交互形成了注意力汇聚； 注意力汇聚有选择地聚合了值（感官输入）以生成最终的输出。
+
+### Attention Mechanism
+
+Query($Q$)
+
+Key($K$)
+
+Value($V$)
+
+
+$$
+Attention\ Pooling(Q, K) · V,\quad\quad \forall Q
+$$
+
+#### Attention Pooling
+
+Attention Pooling是从回归分析的视角看待注意力机制，可以分为非参数型和带参数型。
+
+Nadaraya-Watson核回归是具有注意力机制的机器学习范例。
+
+简单起见，考虑下面这个回归问题：给定一个数据集$Q = \set{(x_i,y_i)|1≤i≤n}$，我们要得到一个映射关系$f$，使得对于任意给定的$x$，我们能预测$\hat{y} = f(x)$
+
+最基础地，我们可以使用Average Pooling，即对任意的输入值，都采用样本输出值的均值（不依赖于x，因而是一个常数）来作为我们的估计结果。
+$$
+f(x) = \frac{1}{n}\sum_{i=1}^n y_i
+$$
+进一步地，我们可以引入$x_i$，来对$y_i$做加权
+$$
+f(x) = \sum_{i=1}^{n} \frac{K(x - x_i)}{\sum_{j=1}^{n} K(x - x_j)} y_i
+$$
+其中，$K$是核函数，上式所描述的估计方法就是**Nadaraya-Watson核回归**，若把核函数用***高斯核*** 代入，则有：
+$$
+高斯核： K(u) = \frac{1}{\sqrt{2π}} exp(-\frac{u^2}{2})\\
+f(x) = \sum_{i=1}^n softmax(-\frac{1}{2}(x-x_i)^2)y_i
+$$
+在这个例子里，$x$与$x_i$越接近，则分配给对应的$y_i$的权重就越大，预测时也就会分配较多“**注意力**”。
+
+可以看出，**Nadaraya-Watson核回归**的本质就是：选取合适的核函数计算权重，对$y_i$做加权平均。
+
+按照这个思想，我们可以更抽象地写出下面的式子：
+$$
+f(x) = \sum_{i=1}^n \alpha(x, x_i)y_i
+$$
+其中，$\alpha(x, x_i)$ 是对输入$x$与样本输入$x_i$的关系建模，映射结果是$y_i$的权重，称之为**注意力权重**。这样，就从回归分析的视角，推导出了Attention mechanism。
 
 
 
+- self attention
+- multi-head attention
+- Scaling dot-product Attention
 
 
-所以，他们说：Attention is all you need.
+$$
+softmax(\frac{Q·K^T}{\sqrt{d_k}}) ·V
+$$
+其中，$\sqrt{d_k}$ ：Key的维度，这里作为scaling factor，防止softmax作用后注意力的分配过于两极分化
 
-但是，也不尽然。
 
 
+## Transformer
 
-![alt text](C:\Users\14711\Desktop\Vision Transformer and Build from Scratch\image\image-5.png)
+![image-20250118235718003](C:\Users\14711\AppData\Roaming\Typora\typora-user-images\image-20250118235718003.png)
 
 
 ## Decode Transformer: Prior Works
@@ -265,7 +326,9 @@ PowerNorm: Rethinking Batch Normalization in Transformers 2003.07845
 [^1]:Sutskever, I., Vinyals, O., & Le, Q. V. (2014). Sequence to sequence learning with neural networks. Advances in neural information processing systems (pp. 3104–3112).
 [^2]:https://zh-v2.d2l.ai/chapter_recurrent-modern/seq2seq.html
 [^3]:https://www.bilibili.com/video/BV1XH4y1T76e/?spm_id_from=333.1387.homepage.video_card.click&vd_source=747ba3a388b6a2ede61e61f1b864c1a6
-[^4]:Mu Li, d2l: https://zh-v2.d2l.ai/chapter_attention-mechanisms/attention-cues.html
+[^4]:Mu Li, d2l: https://zh-v2.d2l.ai/chapter_attention-mechanisms
+
+
 
 
 
